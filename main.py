@@ -18,6 +18,10 @@ bot = commands.Bot(command_prefix='$$', intents=intents)
     description="CoC6版準拠のダイスロールを行います。",
     dm_permission=True
 )
+# 実行可能な場所の設定 (サーバー, 個人DM, グループDM/他人のDM)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+# インストール方法の設定 (サーバーへの導入, ユーザー自身への導入)
+@app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.describe(
     回数="振るダイスの数 (例: 1d100 の '1')",
     面数="ダイスの種類 (例: 1d100 の '100')",
@@ -87,6 +91,10 @@ async def dice_roll(
     description="【接待】必ずスペシャル以上の結果を出します。",
     dm_permission=True
 )
+# 実行可能な場所の設定 (サーバー, 個人DM, グループDM/他人のDM)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+# インストール方法の設定 (サーバーへの導入, ユーザー自身への導入)
+@app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.describe(
     回数="振るダイスの数",
     面数="ダイスの種類",
@@ -144,6 +152,10 @@ async def settai(
     description="【虐待】必ずファンブルの結果を出します。",
     dm_permission=True
 )
+# 実行可能な場所の設定 (サーバー, 個人DM, グループDM/他人のDM)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+# インストール方法の設定 (サーバーへの導入, ユーザー自身への導入)
+@app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.describe(
     回数="振るダイスの数",
     面数="ダイスの種類",
