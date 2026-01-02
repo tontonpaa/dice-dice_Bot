@@ -2,10 +2,6 @@ import os
 import discord
 from discord.ext import commands
 from discord import app_commands
-import subprocess
-import sys
-import re
-import datetime
 import random
 import math
 from dotenv import load_dotenv
@@ -19,7 +15,8 @@ bot = commands.Bot(command_prefix='$$', intents=intents)
 
 @bot.tree.command(
     name="dd", 
-    description="CoC6版準拠のダイスロールを行います。"
+    description="CoC6版準拠のダイスロールを行います。",
+    dm_permission=True
 )
 @app_commands.describe(
     回数="振るダイスの数 (例: 1d100 の '1')",
@@ -87,7 +84,8 @@ async def dice_roll(
 
 @bot.tree.command(
     name="settai", 
-    description="【接待】必ずスペシャル以上の結果を出します。"
+    description="【接待】必ずスペシャル以上の結果を出します。",
+    dm_permission=True
 )
 @app_commands.describe(
     回数="振るダイスの数",
@@ -143,7 +141,8 @@ async def settai(
 
 @bot.tree.command(
     name="gyakutai", 
-    description="【虐待】必ずファンブルの結果を出します。"
+    description="【虐待】必ずファンブルの結果を出します。",
+    dm_permission=True
 )
 @app_commands.describe(
     回数="振るダイスの数",
