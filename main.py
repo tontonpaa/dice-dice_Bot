@@ -16,7 +16,6 @@ bot = commands.Bot(command_prefix='$$', intents=intents)
 @bot.tree.command(
     name="dd", 
     description="CoC6版準拠のダイスロールを行います。",
-    dm_permission=True
 )
 # 実行可能な場所の設定 (サーバー, 個人DM, グループDM/他人のDM)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -89,7 +88,6 @@ async def dice_roll(
 @bot.tree.command(
     name="settai", 
     description="【接待】必ずスペシャル以上の結果を出します。",
-    dm_permission=True
 )
 # 実行可能な場所の設定 (サーバー, 個人DM, グループDM/他人のDM)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -150,7 +148,6 @@ async def settai(
 @bot.tree.command(
     name="gyakutai", 
     description="【虐待】必ずファンブルの結果を出します。",
-    dm_permission=True
 )
 # 実行可能な場所の設定 (サーバー, 個人DM, グループDM/他人のDM)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
