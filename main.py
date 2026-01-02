@@ -17,25 +17,9 @@ load_dotenv()
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='$$', intents=intents)
 
-# インストール設定とコンテキスト設定の定義
-# これにより、サーバー、個人DM、グループDMすべてでコマンドが利用可能になります。
-INSTALL_CONFIG = {
-    "contexts": [
-        discord.InteractionContextType.guild,          # サーバー内
-        discord.InteractionContextType.bot_dm,         # ボットとのDM
-        discord.InteractionContextType.private_channel # グループDMや他人とのDM
-    ],
-    "integration_types": [
-        discord.IntegrationType.guild_install,         # サーバーへの導入
-        discord.IntegrationType.user_install          # ユーザー自身への導入（どこでも使える）
-    ]
-}
-
 @bot.tree.command(
     name="dd", 
-    description="CoC6版準拠のダイスロールを行います。",
-    allowed_contexts=INSTALL_CONFIG["contexts"],
-    integration_types=INSTALL_CONFIG["integration_types"]
+    description="CoC6版準拠のダイスロールを行います。"
 )
 @app_commands.describe(
     回数="振るダイスの数 (例: 1d100 の '1')",
@@ -103,9 +87,7 @@ async def dice_roll(
 
 @bot.tree.command(
     name="settai", 
-    description="【接待】必ずスペシャル以上の結果を出します。",
-    allowed_contexts=INSTALL_CONFIG["contexts"],
-    integration_types=INSTALL_CONFIG["integration_types"]
+    description="【接待】必ずスペシャル以上の結果を出します。"
 )
 @app_commands.describe(
     回数="振るダイスの数",
@@ -161,9 +143,7 @@ async def settai(
 
 @bot.tree.command(
     name="gyakutai", 
-    description="【虐待】必ずファンブルの結果を出します。",
-    allowed_contexts=INSTALL_CONFIG["contexts"],
-    integration_types=INSTALL_CONFIG["integration_types"]
+    description="【虐待】必ずファンブルの結果を出します。"
 )
 @app_commands.describe(
     回数="振るダイスの数",
