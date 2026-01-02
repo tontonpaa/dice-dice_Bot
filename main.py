@@ -9,20 +9,34 @@ import datetime
 import random
 import math
 from dotenv import load_dotenv
+
+# .envファイルの読み込み
 load_dotenv()
 
-def install_import(modules):
-    for module, pip_name in modules:
-        try:
-            __import__(module)
-        except ImportError:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", pip_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            os.execl(sys.executable, sys.executable, *sys.argv)
-
+# 必要なインテントの設定
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='$$', intents=intents)
 
-@bot.tree.command(name="dd", description="CoC6版準拠のダイスロールを行います。")
+# インストール設定とコンテキスト設定の定義
+# これにより、サーバー、個人DM、グループDMすべてでコマンドが利用可能になります。
+INSTALL_CONFIG = {
+    "contexts": [
+        discord.InteractionContextType.guild,          # サーバー内
+        discord.InteractionContextType.bot_dm,         # ボットとのDM
+        discord.InteractionContextType.private_channel # グループDMや他人とのDM
+    ],
+    "integration_types": [
+        discord.IntegrationType.guild_install,         # サーバーへの導入
+        discord.IntegrationType.user_install          # ユーザー自身への導入（どこでも使える）
+    ]
+}
+
+@bot.tree.command(
+    name="dd", 
+    description="CoC6版準拠のダイスロールを行います。",
+    allowed_contexts=INSTALL_CONFIG["contexts"],
+    integration_types=INSTALL_CONFIG["integration_types"]
+)
 @app_commands.describe(
     回数="振るダイスの数 (例: 1d100 の '1')",
     面数="ダイスの種類 (例: 1d100 の '100')",
@@ -36,9 +50,7 @@ async def dice_roll(
     目標値: int = None,
     シークレット: int = 0
 ):
-    """
-    1d100 (または指定したダイス) を振り、CoC6版の判定基準で結果を表示します。
-    """
+    """1d100 を振り、CoC6版の判定基準で結果を表示します。"""
     is_ephemeral = True if シークレット == 1 else False
     await interaction.response.defer(ephemeral=is_ephemeral)
 
@@ -67,12 +79,9 @@ async def dice_roll(
                 embed_color = 0x2ecc71
             else:
                 judgment_text = "❌ **失敗**"
-                embed_color = 0xFFC800  # 失敗時の色を変更
+                embed_color = 0xFFC800
 
-        embed = discord.Embed(
-            title="CoC 第6版 ダイスロール",
-            color=embed_color
-        )
+        embed = discord.Embed(title="CoC 第6版 ダイスロール", color=embed_color)
         if is_ephemeral:
             embed.title += " [シークレット]"
 
@@ -92,7 +101,12 @@ async def dice_roll(
     except Exception as e:
         await interaction.followup.send(f"エラーが発生しました: {e}", ephemeral=is_ephemeral)
 
-@bot.tree.command(name="settai", description="【接待】必ずスペシャル以上の結果を出します。")
+@bot.tree.command(
+    name="settai", 
+    description="【接待】必ずスペシャル以上の結果を出します。",
+    allowed_contexts=INSTALL_CONFIG["contexts"],
+    integration_types=INSTALL_CONFIG["integration_types"]
+)
 @app_commands.describe(
     回数="振るダイスの数",
     面数="ダイスの種類",
@@ -111,10 +125,8 @@ async def settai(
 
     try:
         special_threshold = math.floor(目標値 / 5)
-        # スペシャル以下の値を強制生成
         total_sum = random.randint(1, max(1, special_threshold))
         
-        # 内訳の整合性を取るためのダミー生成
         if 回数 > 1:
             rolls = [0] * 回数
             temp_sum = total_sum
@@ -147,7 +159,12 @@ async def settai(
     except Exception as e:
         await interaction.followup.send(f"エラーが発生しました: {e}", ephemeral=is_ephemeral)
 
-@bot.tree.command(name="gyakutai", description="【虐待】必ずファンブルの結果を出します。")
+@bot.tree.command(
+    name="gyakutai", 
+    description="【虐待】必ずファンブルの結果を出します。",
+    allowed_contexts=INSTALL_CONFIG["contexts"],
+    integration_types=INSTALL_CONFIG["integration_types"]
+)
 @app_commands.describe(
     回数="振るダイスの数",
     面数="ダイスの種類",
@@ -165,14 +182,13 @@ async def gyakutai(
     await interaction.response.defer(ephemeral=is_ephemeral)
 
     try:
-        # 96-100の値を強制生成
         total_sum = random.randint(96, 100)
         
         if 回数 > 1:
             rolls = [0] * 回数
             temp_sum = total_sum
             for i in range(回数 - 1):
-                val = random.randint(1, temp_sum - (回数 - i - 1))
+                val = random.randint(1, max(1, temp_sum - (回数 - i - 1)))
                 rolls[i] = val
                 temp_sum -= val
             rolls[-1] = temp_sum
@@ -198,13 +214,15 @@ async def gyakutai(
     except Exception as e:
         await interaction.followup.send(f"エラーが発生しました: {e}", ephemeral=is_ephemeral)
 
+@bot.event
+async def on_ready():
+    print(f'{bot.user} (ID: {bot.user.id})としてログインしました。')
+    try:
+        # グローバルコマンドとして同期
+        synced = await bot.tree.sync()
+        print(f"{len(synced)} 個のコマンドを同期しました")
+    except Exception as e:
+        print(f"同期エラー: {e}")
+
 if __name__ == "__main__":
-    @bot.event
-    async def on_ready():
-        print(f'{bot.user} (ID: {bot.user.id})としてログインしました。')
-        try:
-            synced = await bot.tree.sync()
-            print(f"{len(synced)} 個のコマンドを同期しました")
-        except Exception as e:
-            print(e)
     bot.run(os.getenv("BOT_TOKEN"))
