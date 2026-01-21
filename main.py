@@ -1,9 +1,10 @@
 import os
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import app_commands
 import random
 import math
+import itertools
 from dotenv import load_dotenv
 
 # .envファイルの読み込み
@@ -12,6 +13,25 @@ load_dotenv()
 # 必要なインテントの設定
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='$$', intents=intents)
+
+# ステータス切り替え用のイテレータ
+status_messages = itertools.cycle(["servers", "users", "ping"])
+
+@tasks.loop(seconds=15)
+async def update_status():
+    """ステータスを定期的に更新するタスク"""
+    current = next(status_messages)
+    
+    if current == "servers":
+        content = f"{len(bot.guilds)} サーバー"
+    elif current == "users":
+        # ユーザー数はBotが認識しているユニークユーザー数
+        content = f"{len(bot.users)} ユーザー"
+    else:
+        # Ping値（ミリ秒）
+        content = f"Ping: {round(bot.latency * 1000)}ms"
+    
+    await bot.change_presence(activity=discord.Game(name=content))
 
 @bot.tree.command(
     name="dd", 
@@ -205,6 +225,9 @@ async def gyakutai(
 @bot.event
 async def on_ready():
     print(f'{bot.user} (ID: {bot.user.id})としてログインしました。')
+        # ステータス更新ループの開始
+    if not update_status.is_running():
+        update_status.start()
     try:
         # グローバルコマンドとして同期
         synced = await bot.tree.sync()
